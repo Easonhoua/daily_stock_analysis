@@ -126,6 +126,16 @@ PROXY_PORT=10809
 
 > Note: Proxy configuration only works for local runs, GitHub Actions environment doesn't need proxy.
 
+**Only want the push notifications proxied while market data stays direct?**
+
+`USE_PROXY` sets the process-wide `http_proxy` / `https_proxy`, so every outbound request — including market data sources — goes through the proxy. When the local proxy only exists to reach Telegram / Discord and similar channels, use the notification-only proxy instead:
+
+```bash
+NOTIFICATION_PROXY_URL=http://127.0.0.1:7897
+```
+
+It is applied only to notification HTTP requests (no process-level proxy variables are touched), so market data and search stay direct. The `NOTIFICATION_PROXY_URL` setting wins over the environment variable of the same name; leave it empty to disable. Only `http://` and `https://` proxy URLs are supported.
+
 ---
 
 ### LLM Configuration

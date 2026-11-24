@@ -30,6 +30,8 @@ from src.formatters import (
     strip_hidden_markdown_metadata,
 )
 
+from .proxy_config import notification_proxies
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -128,6 +130,7 @@ class FeishuSender:
 
         self._app_client: Any = _NO_CLIENT
         self._app_client_lock = threading.Lock()
+        self._proxies = notification_proxies(config)
 
     # ------------------------------------------------------------------
     # Shared helpers
@@ -604,6 +607,7 @@ class FeishuSender:
                     json=request_payload,
                     timeout=timeout_seconds or _WEBHOOK_SEND_TIMEOUT_SECONDS,
                     verify=self._webhook_verify_ssl,
+                    proxies=self._proxies,
                 )
             except (requests.exceptions.ConnectionError,
                      requests.exceptions.Timeout,

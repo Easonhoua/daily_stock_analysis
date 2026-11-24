@@ -15,6 +15,8 @@ import requests
 from src.config import Config
 from src.formatters import chunk_content_by_max_bytes, strip_hidden_markdown_metadata
 
+from .proxy_config import notification_proxies
+
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +65,7 @@ class NtfySender:
         self._ntfy_url = getattr(config, "ntfy_url", None)
         self._ntfy_token = getattr(config, "ntfy_token", None)
         self._webhook_verify_ssl = getattr(config, "webhook_verify_ssl", True)
+        self._proxies = notification_proxies(config)
 
     def _is_ntfy_configured(self) -> bool:
         return bool(self._ntfy_url)
@@ -157,6 +160,7 @@ class NtfySender:
                 headers=headers,
                 timeout=timeout_seconds or 10,
                 verify=self._webhook_verify_ssl,
+                proxies=self._proxies,
             )
             if 200 <= response.status_code < 300:
                 logger.info("ntfy 消息发送成功")

@@ -82,6 +82,8 @@ WEB_SETTINGS_HIDDEN_FROM_UI = {
     "USE_PROXY",
     "PROXY_HOST",
     "PROXY_PORT",
+    # 通知渠道专用代理；只作用于推送请求，与 USE_PROXY 一样属于运维类 .env 变量。
+    "NOTIFICATION_PROXY_URL",
     "SEARXNG_TIMEOUT_SECONDS",
     # CLI-only schedule-mode behavior (python main.py --schedule); the WebUI
     # runtime scheduler does not consult the startup dedup gate.

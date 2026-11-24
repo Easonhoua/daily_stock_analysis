@@ -15,6 +15,8 @@ import re
 from src.config import Config
 from src.formatters import _custom_unit_to_index, strip_hidden_markdown_metadata, utf16_len
 
+from .proxy_config import notification_proxies
+
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +35,7 @@ class TelegramSender:
             'chat_id': getattr(config, 'telegram_chat_id', None),
             'message_thread_id': getattr(config, 'telegram_message_thread_id', None),
         }
+        self._proxies = notification_proxies(config)
 
     def _is_telegram_configured(self) -> bool:
         """检查 Telegram 配置是否完整"""
@@ -145,7 +148,7 @@ class TelegramSender:
         max_retries = 3
         for attempt in range(1, max_retries + 1):
             try:
-                response = requests.post(api_url, json=payload, timeout=timeout_seconds or 10)
+                response = requests.post(api_url, json=payload, timeout=timeout_seconds or 10, proxies=self._proxies)
             except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
                 if attempt < max_retries:
                     delay = 2 ** attempt  # 2s, 4s
@@ -244,7 +247,7 @@ class TelegramSender:
         plain_payload['text'] = text
 
         try:
-            response = requests.post(api_url, json=plain_payload, timeout=timeout_seconds or 10)
+            response = requests.post(api_url, json=plain_payload, timeout=timeout_seconds or 10, proxies=self._proxies)
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
             logger.error(f"Telegram plain-text fallback failed: {e}")
             return False
@@ -371,7 +374,7 @@ class TelegramSender:
             if message_thread_id:
                 data['message_thread_id'] = message_thread_id
             files = {"photo": ("report.png", image_bytes, "image/png")}
-            response = requests.post(api_url, data=data, files=files, timeout=30)
+            response = requests.post(api_url, data=data, files=files, timeout=30, proxies=self._proxies)
             if response.status_code == 200 and response.json().get('ok'):
                 logger.info("Telegram 图片发送成功")
                 return True

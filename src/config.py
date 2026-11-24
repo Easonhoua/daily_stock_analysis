@@ -1205,6 +1205,9 @@ class Config:
     custom_webhook_bearer_token: Optional[str] = None  # Bearer Token（用于需要认证的 Webhook）
     custom_webhook_body_template: Optional[str] = None  # 自定义 Webhook JSON body 模板
     webhook_verify_ssl: bool = True  # Webhook HTTPS 证书校验，false 可支持自签名（有 MITM 风险）
+    # 通知渠道专用代理（如 http://127.0.0.1:7897）。只作用于推送请求，
+    # 不修改进程级 http_proxy，行情数据源保持直连；留空则沿用 USE_PROXY/环境变量行为。
+    notification_proxy_url: Optional[str] = None
 
     # Discord 通知配置
     discord_bot_token: Optional[str] = None  # Discord Bot Token
@@ -2194,6 +2197,7 @@ class Config:
                 os.getenv('CUSTOM_WEBHOOK_BODY_TEMPLATE') or '',
             ) or None,
             webhook_verify_ssl=os.getenv('WEBHOOK_VERIFY_SSL', 'true').lower() == 'true',
+            notification_proxy_url=(os.getenv('NOTIFICATION_PROXY_URL') or '').strip() or None,
             discord_bot_token=os.getenv('DISCORD_BOT_TOKEN'),
             discord_main_channel_id=(
                 os.getenv('DISCORD_MAIN_CHANNEL_ID')

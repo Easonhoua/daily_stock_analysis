@@ -14,6 +14,8 @@ import re
 from src.config import Config
 from src.formatters import strip_hidden_markdown_metadata
 
+from .proxy_config import notification_proxies
+
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +30,7 @@ class Serverchan3Sender:
             config: 配置对象
         """
         self._serverchan3_sendkey = getattr(config, 'serverchan3_sendkey', None)
+        self._proxies = notification_proxies(config)
         
     def send_to_serverchan3(
         self,
@@ -95,7 +98,7 @@ class Serverchan3Sender:
             headers = {
                 'Content-Type': 'application/json;charset=utf-8'
             }
-            response = requests.post(url, json=params, headers=headers, timeout=timeout_seconds or 10)
+            response = requests.post(url, json=params, headers=headers, timeout=timeout_seconds or 10, proxies=self._proxies)
 
             if response.status_code == 200:
                 result = response.json()

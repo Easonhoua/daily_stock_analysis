@@ -13,6 +13,8 @@ import requests
 from src.config import Config
 from src.formatters import strip_hidden_markdown_metadata
 
+from .proxy_config import notification_proxies
+
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +53,7 @@ class GotifySender:
         self._gotify_url = getattr(config, "gotify_url", None)
         self._gotify_token = getattr(config, "gotify_token", None)
         self._webhook_verify_ssl = getattr(config, "webhook_verify_ssl", True)
+        self._proxies = notification_proxies(config)
 
     def _is_gotify_configured(self) -> bool:
         return bool((self._gotify_url or "").strip() and (self._gotify_token or "").strip())
@@ -102,6 +105,7 @@ class GotifySender:
                 headers=headers,
                 timeout=timeout_seconds or 10,
                 verify=self._webhook_verify_ssl,
+                proxies=self._proxies,
             )
             if 200 <= response.status_code < 300:
                 logger.info("Gotify 消息发送成功")

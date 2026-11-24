@@ -16,6 +16,8 @@ import requests
 from src.config import Config
 from src.formatters import markdown_to_html_document, strip_hidden_markdown_metadata
 
+from .proxy_config import notification_proxies
+
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,7 @@ class AstrbotSender:
             'astrbot_token': getattr(config, 'astrbot_token', None),
         }
         self._webhook_verify_ssl = getattr(config, 'webhook_verify_ssl', True)
+        self._proxies = notification_proxies(config)
         
     def _is_astrbot_configured(self) -> bool:
         """检查 AstrBot 配置是否完整（支持 Bot 或 Webhook）"""
@@ -97,7 +100,8 @@ class AstrbotSender:
                     "X-Signature": signature,
                     "X-Timestamp": timestamp
                 },
-                verify=self._webhook_verify_ssl
+                verify=self._webhook_verify_ssl,
+                proxies=self._proxies,
             )
 
             if response.status_code == 200:

@@ -16,6 +16,8 @@ from typing import Optional
 from src.config import Config
 from src.formatters import chunk_content_by_max_bytes, strip_hidden_markdown_metadata
 
+from .proxy_config import notification_proxies
+
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +38,7 @@ class WechatSender:
         self._wechat_max_bytes = getattr(config, 'wechat_max_bytes', 4000)
         self._wechat_msg_type = getattr(config, 'wechat_msg_type', 'markdown')
         self._webhook_verify_ssl = getattr(config, 'webhook_verify_ssl', True)
+        self._proxies = notification_proxies(config)
         
     def send_to_wechat(self, content: str, *, timeout_seconds: Optional[float] = None) -> bool:
         """
@@ -115,7 +118,8 @@ class WechatSender:
                 "image": {"base64": b64, "md5": md5_hash},
             }
             response = requests.post(
-                self._wechat_url, json=payload, timeout=30, verify=self._webhook_verify_ssl
+                self._wechat_url, json=payload, timeout=30, verify=self._webhook_verify_ssl,
+                proxies=self._proxies,
             )
             if response.status_code == 200:
                 result = response.json()
@@ -138,7 +142,8 @@ class WechatSender:
             self._wechat_url,
             json=payload,
             timeout=timeout_seconds or 10,
-            verify=self._webhook_verify_ssl
+            verify=self._webhook_verify_ssl,
+            proxies=self._proxies,
         )
         
         if response.status_code == 200:

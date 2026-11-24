@@ -11,12 +11,15 @@ from typing import Optional
 from src.config import Config
 from src.formatters import chunk_content_by_max_bytes, strip_hidden_markdown_metadata  # <-- 引入项目内置的切片器
 
+from .proxy_config import notification_proxies
+
 logger = logging.getLogger(__name__)
 
 class DingtalkSender:
     def __init__(self, config: Config):
         self.webhook_url = config.dingtalk_webhook_url
         self.secret = config.dingtalk_secret
+        self._proxies = notification_proxies(config)
 
     def send_to_dingtalk(self, content: str, title: str = "", timeout_seconds: int = 10) -> bool:
         """发送 Markdown 消息到钉钉群 (Send DingTalk Markdown message)"""
@@ -67,7 +70,7 @@ class DingtalkSender:
 
             # 4. 发送请求
             try:
-                response = requests.post(url, json=payload, headers=headers, timeout=timeout_seconds)
+                response = requests.post(url, json=payload, headers=headers, timeout=timeout_seconds, proxies=self._proxies)
                 response.raise_for_status()
                 
                 result = response.json()

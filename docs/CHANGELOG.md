@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- [新功能] 新增通知渠道专用代理 `NOTIFICATION_PROXY_URL`：只对推送请求生效、不修改进程级 `http_proxy`/`https_proxy`，因此 `USE_PROXY` 仍可用于整体代理，而行情与搜索在只配该项时保持直连；未配置时通知请求沿用 `requests` 默认行为（含 `USE_PROXY` 环境变量）。
 - [修复] Tushare 日线接口权限拒绝不再累计整源故障，避免 ETF 与 A 股接口互相误伤；保留网络故障计数和半开探测恢复行为。
 
 - [修复] Tushare 权限熔断仅规范化网关 URL 的协议和主机名，保留路径与查询参数大小写，避免不同路由共享拒绝缓存；切换地址后恢复 Fetcher、选股快照及日线优先源尝试，格式错误的地址仍按原有链路回退备用源。

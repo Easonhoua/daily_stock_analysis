@@ -320,6 +320,16 @@ Docker 场景可通过 `--env-file .env` / Compose `env_file` 注入通知相关
 
 降噪静默时段建议显式配置 `NOTIFICATION_TIMEZONE`，避免容器默认时区与预期不一致。自签名内网 webhook 可临时使用 `WEBHOOK_VERIFY_SSL=false`，但不要在公网链路关闭证书校验。
 
+### 推送单独走代理
+
+`USE_PROXY=true` 会写入进程级 `http_proxy` / `https_proxy`，通知与行情、搜索等所有出站请求都会走代理。如果本地代理只是为了让 Telegram / Discord 等境外渠道可用，改用通知专用代理：
+
+```bash
+NOTIFICATION_PROXY_URL=http://127.0.0.1:7897
+```
+
+它只作为通知渠道 `requests` 调用的 `proxies` 参数，不修改进程级代理变量，因此行情与搜索保持直连；两者可以同时配置，此时通知请求以 `NOTIFICATION_PROXY_URL` 为准。留空表示不覆盖、沿用 `requests` 默认行为（含 `USE_PROXY` 写入的代理）。仅支持 `http://` / `https://` 代理地址，SOCKS 代理需要额外依赖，暂不支持。该变量作用于全部通知渠道的 HTTP 请求，包括 Web 设置页的单渠道测试。
+
 ## GitHub Actions
 
 默认 `00-daily-analysis.yml` 只读取表格中显式映射的 Secret / Variable。新增 repository Secret 或 Variable 后，只有变量名已经出现在 workflow `env:` 中才会进入运行进程；`STOCK_GROUP_N` / `EMAIL_GROUP_N` 这类任意编号变量不会自动导入。

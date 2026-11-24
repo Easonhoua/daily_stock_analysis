@@ -18,6 +18,8 @@ from src.formatters import (
     strip_hidden_markdown_metadata,
 )
 
+from .proxy_config import notification_proxies
+
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,7 @@ class DiscordSender:
             'channel_id': getattr(config, 'discord_main_channel_id', None),
             'webhook_url': getattr(config, 'discord_webhook_url', None),
         }
+        self._proxies = notification_proxies(config)
         self._discord_max_words = self._normalize_max_words(
             getattr(config, 'discord_max_words', DISCORD_MAX_CONTENT_LENGTH)
         )
@@ -216,6 +219,7 @@ class DiscordSender:
         request_kwargs = {
             'json': payload,
             'timeout': timeout_seconds or 10,
+            'proxies': self._proxies,
         }
         if headers:
             request_kwargs['headers'] = headers

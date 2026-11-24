@@ -21,6 +21,8 @@ from src.formatters import (
     strip_hidden_markdown_metadata,
 )
 
+from .proxy_config import notification_proxies
+
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +47,7 @@ class CustomWebhookSender:
         self._custom_webhook_bearer_token = getattr(config, 'custom_webhook_bearer_token', None)
         self._custom_webhook_body_template = getattr(config, 'custom_webhook_body_template', None)
         self._webhook_verify_ssl = getattr(config, 'webhook_verify_ssl', True)
+        self._proxies = notification_proxies(config)
  
     def send_to_custom(self, content: str) -> bool:
         """
@@ -132,7 +135,8 @@ class CustomWebhookSender:
                         )
                     response = requests.post(
                         url, data=data, files=files, headers=headers, timeout=30,
-                        verify=self._webhook_verify_ssl
+                        verify=self._webhook_verify_ssl,
+                        proxies=self._proxies,
                     )
                     if response.status_code in (200, 204):
                         logger.info("自定义 Webhook %d（Discord 图片）推送成功", i + 1)
@@ -167,7 +171,7 @@ class CustomWebhookSender:
         if self._custom_webhook_bearer_token:
             headers['Authorization'] = f'Bearer {self._custom_webhook_bearer_token}'
         body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
-        response = requests.post(url, data=body, headers=headers, timeout=timeout, verify=self._webhook_verify_ssl)
+        response = requests.post(url, data=body, headers=headers, timeout=timeout, verify=self._webhook_verify_ssl, proxies=self._proxies)
         if response.status_code == 200:
             return True
         logger.error(f"自定义 Webhook 推送失败: HTTP {response.status_code}")
@@ -226,6 +230,7 @@ class CustomWebhookSender:
                 headers=headers,
                 timeout=timeout_seconds,
                 verify=self._webhook_verify_ssl,
+                proxies=self._proxies,
             )
         except Exception as exc:
             error_code, retryable = self._classify_custom_webhook_exception(exc)

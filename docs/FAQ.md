@@ -128,6 +128,16 @@ PROXY_PORT=10809
 
 > ⚠️ 注意：代理配置仅对本地运行生效，GitHub Actions 环境无需配置代理。
 
+**只想让推送走代理、行情保持直连？**
+
+`USE_PROXY` 会通过进程级 `http_proxy` / `https_proxy` 让**所有**出站请求走代理，行情数据源也会被代理掉。如果本地代理只是为了访问 Telegram / Discord 等境外通知渠道，改用通知渠道专用代理：
+
+```bash
+NOTIFICATION_PROXY_URL=http://127.0.0.1:7897
+```
+
+它只作用于通知发送的 HTTP 请求（不修改进程级代理变量），行情、搜索等请求仍保持直连。取值优先 `NOTIFICATION_PROXY_URL` 配置项，未配置时回退同名环境变量；留空即关闭。仅支持 `http://` / `https://` 代理地址。
+
 ---
 
 ### LLM 配置常见问题

@@ -13,6 +13,8 @@ import requests
 from src.config import Config
 from src.formatters import markdown_to_plain_text
 
+from .proxy_config import notification_proxies
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +32,7 @@ class PushoverSender:
             'user_key': getattr(config, 'pushover_user_key', None),
             'api_token': getattr(config, 'pushover_api_token', None),
         }
+        self._proxies = notification_proxies(config)
         
     def _is_pushover_configured(self) -> bool:
         """检查 Pushover 配置是否完整"""
@@ -134,7 +137,7 @@ class PushoverSender:
                 "priority": priority,
             }
             
-            response = requests.post(api_url, data=payload, timeout=timeout_seconds or 30)
+            response = requests.post(api_url, data=payload, timeout=timeout_seconds or 30, proxies=self._proxies)
             
             if response.status_code == 200:
                 result = response.json()

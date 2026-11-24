@@ -15,6 +15,8 @@ import requests
 from src.config import Config
 from src.formatters import chunk_content_by_max_bytes, strip_hidden_markdown_metadata
 
+from .proxy_config import notification_proxies
+
 logger = logging.getLogger(__name__)
 
 # Slack Block Kit 中单个 section block 的 text 字段上限为 3000 字符
@@ -36,6 +38,7 @@ class SlackSender:
         self._slack_bot_token = getattr(config, 'slack_bot_token', None)
         self._slack_channel_id = getattr(config, 'slack_channel_id', None)
         self._webhook_verify_ssl = getattr(config, 'webhook_verify_ssl', True)
+        self._proxies = notification_proxies(config)
 
     @property
     def _use_bot(self) -> bool:
@@ -124,6 +127,7 @@ class SlackSender:
                 headers={'Content-Type': 'application/json; charset=utf-8'},
                 timeout=timeout_seconds or 15,
                 verify=self._webhook_verify_ssl,
+                proxies=self._proxies,
             )
             if response.status_code == 200 and response.text == "ok":
                 logger.info("Slack Webhook 消息发送成功")
@@ -159,6 +163,7 @@ class SlackSender:
                 data=json.dumps(payload, ensure_ascii=False).encode('utf-8'),
                 headers=headers,
                 timeout=timeout_seconds or 15,
+                proxies=self._proxies,
             )
             result = response.json()
             if result.get("ok"):
@@ -197,6 +202,7 @@ class SlackSender:
                         'length': len(image_bytes),
                     },
                     timeout=30,
+                    proxies=self._proxies,
                 )
                 result1 = resp1.json()
                 if not result1.get("ok"):
@@ -212,6 +218,7 @@ class SlackSender:
                     data=image_bytes,
                     headers={'Content-Type': 'application/octet-stream'},
                     timeout=30,
+                    proxies=self._proxies,
                 )
                 if resp2.status_code != 200:
                     logger.error("Slack 文件上传失败: HTTP %s", resp2.status_code)
@@ -226,6 +233,7 @@ class SlackSender:
                         'channel_id': self._slack_channel_id,
                     },
                     timeout=30,
+                    proxies=self._proxies,
                 )
                 result3 = resp3.json()
                 if result3.get("ok"):
