@@ -1,0 +1,49 @@
+# 生产部署用 Compose（服务器公网访问）
+#
+# 与仓库自带的 ../docker-compose.yml 的区别：
+#   - 使用官方镜像，不在服务器上构建（服务器不需要 Node / 编译环境）
+#   - 默认只绑定 127.0.0.1，公网请求必须经 Caddy / Nginx 反代进来
+#   - 通过环境变量收口：BIND_ADDR / DSA_IMAGE / DSA_MEMORY_LIMIT
+#
+# 启动：docker compose --env-file .env up -d
+
+name: dsa
+
+services:
+  server:
+    # 国内服务器拉不动 ghcr 时，把 DSA_IMAGE 改成 Docker Hub 镜像：
+    #   DSA_IMAGE=zhulinsen/daily_stock_analysis:latest
+    image: ${DSA_IMAGE:-ghcr.io/zhulinsen/daily_stock_analysis:latest}
+    container_name: stock-server
+    restart: unless-stopped
+    command: ["python", "main.py", "--serve-only", "--host", "0.0.0.0", "--port", "8000"]
+
+    # .env 只作为「启动环境变量」注入容器；Web 设置页保存的值写到 ENV_FILE。
+    # 注意：启动环境变量优先级更高，所以同一个键不要两边都配（详见 README）。
+    env_file:
+      - .env
+
+    environment:
+      TZ: Asia/Shanghai
+      WEBUI_HOST: 0.0.0.0
+      ENV_FILE: /app/data/runtime.env
+
+    ports:
+      # 默认只监听本机，公网无法直连 8000；无域名临时调试时可设为 0.0.0.0
+      - "${BIND_ADDR:-127.0.0.1}:8000:8000"
+
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./reports:/app/reports
+
+    deploy:
+      resources:
+        limits:
+          memory: ${DSA_MEMORY_LIMIT:-2g}
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

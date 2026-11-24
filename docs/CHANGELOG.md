@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- [改进] 重构 Web 首页信息层级：新增研究台标题、独立分析操作区和研究起始页，侧栏按研究、投资与系统分组，支持中英文及窄屏布局。
+
+- [改进] Web 界面采用翡翠绿金融工作台配色，统一实体卡片、导航选中态、按钮与输入框，适配深浅主题。
+
 - [新功能] 新增通知渠道专用代理 `NOTIFICATION_PROXY_URL`：只对推送请求生效、不修改进程级 `http_proxy`/`https_proxy`，因此 `USE_PROXY` 仍可用于整体代理，而行情与搜索在只配该项时保持直连；未配置时通知请求沿用 `requests` 默认行为（含 `USE_PROXY` 环境变量）。
 - [修复] Tushare 日线接口权限拒绝不再累计整源故障，避免 ETF 与 A 股接口互相误伤；保留网络故障计数和半开探测恢复行为。
 
@@ -2509,3 +2513,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 [1.2.0]: https://github.com/ZhuLinsen/daily_stock_analysis/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/ZhuLinsen/daily_stock_analysis/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/ZhuLinsen/daily_stock_analysis/releases/tag/v1.0.0
+
+

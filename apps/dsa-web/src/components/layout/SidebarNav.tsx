@@ -42,14 +42,14 @@ const NAV_ITEMS: NavItem[] = [
 export const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed = false, onNavigate, variant = 'default' }) => {
   const { authEnabled, logout } = useAuth();
   const location = useLocation();
-  const { t } = useUiLanguage();
+  const { t, language } = useUiLanguage();
   const completionBadge = useAgentChatStore((state) => state.completionBadge);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const isRail = variant === 'rail';
   const itemBaseClass = cn(
     'group relative flex h-[var(--nav-item-height)] w-full items-center overflow-hidden rounded-2xl border border-transparent text-sm leading-none text-secondary-text transition-all',
     isRail
-      ? 'justify-center gap-2.5 px-2'
+      ? 'justify-start gap-3 px-3'
       : collapsed
         ? 'justify-center px-0'
         : 'gap-3 px-[var(--nav-item-padding-x)]'
@@ -67,8 +67,8 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed = false, onNav
       <div
         className={cn(
           'flex shrink-0 items-center',
-          isRail ? 'mb-5 justify-center gap-2 pt-1' : 'mb-4 gap-2 px-1',
-          collapsed || isRail ? 'justify-center' : ''
+          isRail ? 'mb-8 justify-start gap-3 px-3 pt-3' : 'mb-4 gap-2 px-1',
+          collapsed ? 'justify-center' : ''
         )}
       >
         <div
@@ -80,7 +80,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed = false, onNav
           <BarChart3 className={cn(isRail ? 'h-[19px] w-[19px]' : 'h-5 w-5')} />
         </div>
         {!collapsed ? (
-          <p className={cn('min-w-0 truncate font-semibold text-foreground', isRail ? 'text-[0.95rem] leading-none' : 'text-sm')}>DSA</p>
+          <p className={cn('min-w-0 truncate font-semibold text-foreground', isRail ? 'text-[0.95rem] leading-none' : 'text-sm')}>DSA<span className="sidebar-brand-caption">RESEARCH TERMINAL</span></p>
         ) : null}
       </div>
 
@@ -88,6 +88,8 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed = false, onNav
         {NAV_ITEMS.map(({ key, labelKey, to, icon: Icon, exact, badge }) => {
           const label = t(labelKey);
           return (
+          <React.Fragment key={key}>
+          {!collapsed && ['home', 'portfolio', 'data'].includes(key) ? <div className="sidebar-section-label">{key === 'home' ? (language === 'en' ? 'RESEARCH' : '研究空间') : key === 'portfolio' ? (language === 'en' ? 'INVESTMENT' : '投资管理') : (language === 'en' ? 'SYSTEM' : '系统与数据')}</div> : null}
           <NavLink
             key={key}
             to={to}
@@ -119,7 +121,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed = false, onNav
                 ) : null}
               </>
             )}
-          </NavLink>
+          </NavLink></React.Fragment>
         );
         })}
 
