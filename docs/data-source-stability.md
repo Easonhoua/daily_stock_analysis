@@ -205,6 +205,8 @@ LONGBRIDGE_ACCESS_TOKEN=your_access_token
 
 ## 用户可见提示建议
 
+若日志先显示日线获取成功，随后在写入 `stock_daily` 时出现 `unable to open database file`，应分别检查行情获取与 SQLite 写入结果。日线现使用单行 UPSERT 批量绑定，在同一事务内保存全部交易日，可避免多行 SQL 在临时目录不可写时导致整批日线保存失败。更新并重启后可重新分析原股票，核对保存结果与报告中的均线。筹码分布通过独立接口获取。
+
 对外沟通时建议区分三类情况：
 
 | 情况 | 建议提示 |

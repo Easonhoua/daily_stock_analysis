@@ -3548,9 +3548,6 @@ class DatabaseManager(metaclass=_DatabaseManagerMeta):
 
         def _write(session: Session) -> int:
             if self._is_sqlite_engine:
-                # SQLite has a per-statement bind-parameter limit (commonly 999).
-                # Each record has ~17 columns, so chunk upserts to stay within bounds.
-                _SQLITE_CHUNK = 50
                 # `_run_write_transaction()` opens SQLite writes with
                 # `BEGIN IMMEDIATE`, so existence checks and upsert execute
                 # within one stable write window.
@@ -3573,36 +3570,37 @@ class DatabaseManager(metaclass=_DatabaseManagerMeta):
                 new_records = [
                     record for record in records if record['date'] not in existing_dates
                 ]
-                for i in range(0, len(records), _SQLITE_CHUNK):
-                    chunk = records[i : i + _SQLITE_CHUNK]
-                    stmt = sqlite_insert(StockDaily).values(chunk)
-                    excluded = stmt.excluded
-                    session.execute(
-                        stmt.on_conflict_do_update(
-                            index_elements=['code', 'date'],
-                            set_={
-                                'open': excluded.open,
-                                'high': excluded.high,
-                                'low': excluded.low,
-                                'close': excluded.close,
-                                'volume': excluded.volume,
-                                'amount': excluded.amount,
-                                'pct_chg': excluded.pct_chg,
-                                'ma5': excluded.ma5,
-                                'ma10': excluded.ma10,
-                                'ma20': excluded.ma20,
-                                'volume_ratio': excluded.volume_ratio,
-                                'data_source': excluded.data_source,
-                                # D1 degrade: never overwrite a previously
-                                # backfilled non-NULL canonical_id with NULL.
-                                'canonical_id': func.coalesce(
-                                    excluded.canonical_id,
-                                    StockDaily.canonical_id,
-                                ),
-                                'updated_at': excluded.updated_at,
-                            },
-                        )
-                    )
+                # Reuse one single-row UPSERT via executemany. A multi-row VALUES
+                # statement can spill its statement journal to a temporary file.
+                stmt = sqlite_insert(StockDaily.__table__)
+                excluded = stmt.excluded
+                session.execute(
+                    stmt.on_conflict_do_update(
+                        index_elements=['code', 'date'],
+                        set_={
+                            'open': excluded.open,
+                            'high': excluded.high,
+                            'low': excluded.low,
+                            'close': excluded.close,
+                            'volume': excluded.volume,
+                            'amount': excluded.amount,
+                            'pct_chg': excluded.pct_chg,
+                            'ma5': excluded.ma5,
+                            'ma10': excluded.ma10,
+                            'ma20': excluded.ma20,
+                            'volume_ratio': excluded.volume_ratio,
+                            'data_source': excluded.data_source,
+                            # D1 degrade: never overwrite a previously
+                            # backfilled non-NULL canonical_id with NULL.
+                            'canonical_id': func.coalesce(
+                                excluded.canonical_id,
+                                StockDaily.canonical_id,
+                            ),
+                            'updated_at': excluded.updated_at,
+                        },
+                    ),
+                    records,
+                )
                 return len(new_records)
             else:
                 existing_rows = {

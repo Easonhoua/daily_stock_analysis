@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 import pandas as pd
 from sqlalchemy import and_, create_engine as sqlalchemy_create_engine, inspect, select, text
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.sql import func
 
 # Ensure src module can be imported
@@ -1427,6 +1427,33 @@ class TestStorage(unittest.TestCase):
         finally:
             DatabaseManager.reset_instance()
 
+    def test_daily_batch_upserts_and_rolls_back_on_late_failure(self):
+        DatabaseManager.reset_instance()
+        self.addCleanup(DatabaseManager.reset_instance)
+        db = DatabaseManager(db_url="sqlite:///:memory:")
+        dates = pd.bdate_range("2026-09-28", periods=39).date
+        df = pd.DataFrame({"date": dates, "close": 42.0, "ma20": 41.0})
+        code = "002714.SZ"
+        self.assertEqual(db.save_daily_data(df.iloc[:2], code), 2)
+
+        # Fail after some of the single-row upserts have already executed.
+        with db._engine.begin() as conn:
+            conn.exec_driver_sql("""
+                CREATE TRIGGER reject_invalid_close BEFORE INSERT ON stock_daily
+                WHEN NEW.close < 0 BEGIN SELECT RAISE(ABORT, 'invalid close'); END
+            """)
+        df["close"] = 43.0
+        df.loc[len(df) - 1, "close"] = -1
+        with self.assertRaises(IntegrityError):
+            db.save_daily_data(df, code)
+        saved = db.get_latest_data(code, days=39)
+        self.assertEqual([row.close for row in saved], [42.0, 42.0])
+
+        df.loc[len(df) - 1, "close"] = 43.0
+        self.assertEqual(db.save_daily_data(df, code), 37)
+        self.assertEqual(db.save_daily_data(df, code), 0)
+        self.assertEqual(db.get_analysis_context(code)["today"]["ma20"], 41.0)
+
     def test_save_daily_data_sqlite_concurrent_same_code_date_counts_only_new_rows(self):
         DatabaseManager.reset_instance()
         temp_dir = tempfile.TemporaryDirectory()
@@ -1485,8 +1512,8 @@ class TestStorage(unittest.TestCase):
 
             self.assertEqual(total, 1)
         finally:
-            temp_dir.cleanup()
             DatabaseManager.reset_instance()
+            temp_dir.cleanup()
 
     # ------------------------------------------------------------------
     # Story 1.2 — canonical_id column + dual-write (issue #2207 PR2)
